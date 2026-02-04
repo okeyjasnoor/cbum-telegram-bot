@@ -1,6 +1,8 @@
 import os
 import random
 import json
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import date, timedelta
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -114,6 +116,20 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 
 app.add_handler(CallbackQueryHandler(next_quote, pattern="^next$"))
+
+print("Bot is running...")
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    server.serve_forever()
+
+threading.Thread(target=run_http_server, daemon=True).start()
 
 print("Bot is running...")
 app.run_polling()
